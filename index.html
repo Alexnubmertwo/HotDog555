@@ -31,15 +31,42 @@
       var(--bg);
     min-height:100vh;
     padding-bottom: calc(96px + var(--safe-bottom));
+    position:relative;
   }
   ::-webkit-scrollbar{display:none;}
+
+  /* ---------- LIQUID BACKGROUND BLOBS ---------- */
+  .liquid-blob{
+    position:fixed; border-radius:50%; filter:blur(60px); z-index:0; pointer-events:none;
+    opacity:0.55; mix-blend-mode:screen;
+  }
+  .lb1{width:260px; height:260px; top:-60px; left:-60px; background:radial-gradient(circle, #ff9d1a, transparent 70%); animation:float1 13s ease-in-out infinite;}
+  .lb2{width:220px; height:220px; top:20px; right:-70px; background:radial-gradient(circle, #ffe27a, transparent 70%); animation:float2 16s ease-in-out infinite;}
+  .lb3{width:200px; height:200px; top:260px; left:40%; background:radial-gradient(circle, #ff5b1a, transparent 70%); animation:float3 19s ease-in-out infinite; opacity:0.35;}
+  @keyframes float1{0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(30px,40px) scale(1.15);}}
+  @keyframes float2{0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(-25px,25px) scale(0.9);}}
+  @keyframes float3{0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(15px,-30px) scale(1.1);}}
+
+  /* ---------- LIQUID GLASS SHEEN (specular highlight sweep) ---------- */
+  .glass-sheen{position:relative; overflow:hidden;}
+  .glass-sheen::before{
+    content:""; position:absolute; top:0; left:-150%; width:60%; height:100%;
+    background:linear-gradient(115deg, transparent 20%, rgba(255,255,255,0.35) 45%, rgba(255,255,255,0.05) 55%, transparent 75%);
+    transform:skewX(-18deg); animation:sheen-sweep 5s ease-in-out infinite; pointer-events:none;
+  }
+  @keyframes sheen-sweep{
+    0%{left:-150%;}
+    35%{left:160%;}
+    100%{left:160%;}
+  }
 
   /* ---------- HEADER ---------- */
   .topbar{
     position:sticky; top:0; z-index:40;
     padding:14px 16px 10px;
-    background:linear-gradient(180deg, rgba(10,9,8,0.97) 60%, rgba(10,9,8,0.85) 85%, transparent);
-    backdrop-filter: blur(10px);
+    background:linear-gradient(180deg, rgba(10,9,8,0.85) 60%, rgba(10,9,8,0.65) 85%, transparent);
+    backdrop-filter: blur(22px) saturate(180%);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
   }
   .brand{display:flex; align-items:center; gap:10px;}
   .brand .logo{
@@ -66,7 +93,8 @@
     position:relative; overflow:hidden; padding:16px 18px;
     display:flex; flex-direction:column; justify-content:center;
     border:1px solid var(--glass-brd-strong);
-    box-shadow:0 10px 30px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.12);
+    box-shadow:0 10px 30px rgba(0,0,0,0.45), inset 0 1.5px 0 rgba(255,255,255,0.35), inset 0 -12px 24px rgba(0,0,0,0.15);
+    backdrop-filter: blur(6px) saturate(160%);
   }
   .banner-slide::after{
     content:""; position:absolute; inset:0;
@@ -93,8 +121,10 @@
   .cat-pill{
     flex:none; padding:9px 16px; border-radius:100px; font-size:13.5px; font-weight:700;
     background:var(--glass); border:1px solid var(--glass-brd); color:var(--text-dim);
-    backdrop-filter:blur(8px); display:flex; align-items:center; gap:6px; white-space:nowrap;
+    backdrop-filter:blur(14px) saturate(160%); -webkit-backdrop-filter:blur(14px) saturate(160%);
+    display:flex; align-items:center; gap:6px; white-space:nowrap;
     transition:all .25s ease;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.1);
   }
   .cat-pill.active{
     background:linear-gradient(120deg, var(--yellow), var(--orange)); color:#1a0f00; border-color:transparent;
@@ -110,10 +140,13 @@
   .grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:0 16px;}
   .card{
     background:var(--glass); border:1px solid var(--glass-brd); border-radius:20px; overflow:hidden;
-    backdrop-filter:blur(10px); position:relative;
-    box-shadow:0 8px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+    backdrop-filter:blur(18px) saturate(160%); -webkit-backdrop-filter:blur(18px) saturate(160%);
+    position:relative;
+    box-shadow:0 8px 24px rgba(0,0,0,0.35), inset 0 1.5px 0 rgba(255,255,255,0.16);
     display:flex; flex-direction:column;
+    transition:transform .15s ease;
   }
+  .card:active{transform:scale(0.97);}
   .card .img-wrap{position:relative; width:100%; aspect-ratio:1/0.85; overflow:hidden;}
   .card img{width:100%; height:100%; object-fit:cover; display:block;}
   .card .img-wrap::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg, transparent 60%, rgba(10,9,8,0.55));}
@@ -148,8 +181,8 @@
     display:none; align-items:center; justify-content:space-between; gap:10px;
     padding:13px 12px 13px 18px; border-radius:20px;
     background:linear-gradient(120deg, rgba(255,196,0,0.97), rgba(255,122,26,0.97));
-    box-shadow:0 14px 40px rgba(255,120,0,0.4), inset 0 1px 0 rgba(255,255,255,0.5);
-    backdrop-filter: blur(14px);
+    box-shadow:0 14px 40px rgba(255,120,0,0.4), inset 0 1.5px 0 rgba(255,255,255,0.6);
+    backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
   }
   .cart-bar.show{display:flex; animation:pop .35s ease;}
   @keyframes pop{from{transform:translateY(16px) scale(0.96); opacity:0;} to{transform:translateY(0) scale(1); opacity:1;}}
@@ -166,8 +199,10 @@
   .sheet-backdrop.show{opacity:1; pointer-events:auto;}
   .sheet{
     position:fixed; left:0; right:0; bottom:0; z-index:61; max-height:82vh; overflow-y:auto;
-    background:linear-gradient(180deg, #171310, #0a0908);
+    background:linear-gradient(180deg, rgba(23,19,16,0.92), rgba(10,9,8,0.96));
+    backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%);
     border-top:1px solid var(--glass-brd-strong); border-radius:26px 26px 0 0;
+    box-shadow:inset 0 1.5px 0 rgba(255,255,255,0.14);
     padding:10px 16px calc(20px + var(--safe-bottom));
     transform:translateY(100%); transition:transform .3s cubic-bezier(.2,.9,.25,1);
   }
@@ -184,7 +219,8 @@
   .checkout-btn{
     width:100%; margin-top:10px; padding:16px; border:none; border-radius:16px;
     background:linear-gradient(120deg, var(--yellow), var(--orange)); color:#1a0f00; font-weight:800; font-size:15px;
-    box-shadow:0 10px 26px rgba(255,140,0,0.4);
+    box-shadow:0 10px 26px rgba(255,140,0,0.4), inset 0 1.5px 0 rgba(255,255,255,0.6);
+    position:relative; overflow:hidden;
   }
   .empty-state{text-align:center; padding:30px 10px; color:var(--text-dim); font-size:13px;}
 
@@ -219,6 +255,10 @@
 </head>
 <body>
 
+<div class="liquid-blob lb1"></div>
+<div class="liquid-blob lb2"></div>
+<div class="liquid-blob lb3"></div>
+
 <div class="topbar">
   <div class="brand">
     <div class="logo">🌭</div>
@@ -231,17 +271,17 @@
 
 <div class="banner-wrap">
   <div class="banner-scroll" id="bannerScroll">
-    <div class="banner-slide b1">
+    <div class="banner-slide b1 glass-sheen">
       <span class="banner-eyebrow">🔥 Хит продаж</span>
       <h3>Dauble Chizburger</h3>
       <span>Двойное мясо, двойной сыр — 45.000 сум</span>
     </div>
-    <div class="banner-slide b2">
+    <div class="banner-slide b2 glass-sheen">
       <span class="banner-eyebrow">🚀 Бесплатная доставка</span>
       <h3>При заказе от 100.000</h3>
       <span>Успей оформить заказ прямо сейчас</span>
     </div>
-    <div class="banner-slide b3">
+    <div class="banner-slide b3 glass-sheen">
       <span class="banner-eyebrow">🌭 Новинка</span>
       <h3>Hotdog Shashlik</h3>
       <span>Сочный шашлык в горячей булке</span>
@@ -256,7 +296,7 @@
 
 <div id="menuContainer"></div>
 
-<div class="cart-bar" id="cartBar">
+<div class="cart-bar glass-sheen" id="cartBar">
   <div class="cinfo"><b id="cartCount">0 товара</b><span id="cartSum">0 сум</span></div>
   <button class="cta" onclick="openSheet()">🛒 Корзина</button>
 </div>
@@ -267,7 +307,7 @@
   <h3>Ваш заказ</h3>
   <div id="cartItems"></div>
   <div class="cart-total-row"><span>Итого</span><span id="sheetTotal">0 сум</span></div>
-  <button class="checkout-btn" onclick="openCheckoutForm()">Оформить заказ →</button>
+  <button class="checkout-btn glass-sheen" onclick="openCheckoutForm()">Оформить заказ →</button>
 </div>
 
 <div class="sheet-backdrop" id="formBackdrop" onclick="closeCheckoutForm()"></div>
@@ -304,7 +344,7 @@
   </div>
 
   <div class="final-total"><span>Итого к оплате</span><span id="finalTotal">0 сум</span></div>
-  <button class="checkout-btn" onclick="submitOrder()">Подтвердить заказ ✅</button>
+  <button class="checkout-btn glass-sheen" onclick="submitOrder()">Подтвердить заказ ✅</button>
 </div>
 
 <script>
@@ -488,6 +528,8 @@ function openCheckoutForm(){
   updateFinalTotal();
   document.getElementById('formSheet').classList.add('show');
   document.getElementById('formBackdrop').classList.add('show');
+  // Ask for geolocation automatically as soon as the form opens
+  if(!userLocation) getLocation();
 }
 function closeCheckoutForm(){
   document.getElementById('formSheet').classList.remove('show');
@@ -521,7 +563,8 @@ function updateFinalTotal(){
 
 function getLocation(){
   const btn = document.getElementById('locBtn');
-  btn.textContent = 'Определяем координаты...';
+  btn.textContent = '📍 Определяем координаты...';
+  btn.classList.remove('got');
 
   function onSuccess(lat, lon){
     userLocation = {lat, lon};
@@ -529,33 +572,48 @@ function getLocation(){
     btn.classList.add('got');
     if(tg) tg.HapticFeedback?.notificationOccurred('success');
   }
-  function onFail(){
-    btn.textContent = '⚠️ Не удалось получить, попробуйте снова';
+  function onFail(reason){
+    btn.textContent = '📍 Не удалось получить — нажмите, чтобы разрешить';
     if(tg) tg.HapticFeedback?.notificationOccurred('error');
+    console.warn('Geolocation failed:', reason);
+  }
+
+  function tryBrowserGeo(){
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(
+        (pos) => onSuccess(pos.coords.latitude, pos.coords.longitude),
+        (err) => onFail(err.message),
+        {enableHighAccuracy:true, timeout:10000, maximumAge:0}
+      );
+    } else {
+      onFail('geolocation API unavailable');
+    }
   }
 
   // Prefer native Telegram LocationManager (Bot API 8.0+) if available
   if(tg && tg.LocationManager){
     try{
       tg.LocationManager.init(() => {
+        if(tg.LocationManager.isLocationAvailable === false){
+          tryBrowserGeo();
+          return;
+        }
         tg.LocationManager.getLocation((data) => {
-          if(data) onSuccess(data.latitude, data.longitude);
-          else onFail();
+          if(data && data.latitude){
+            onSuccess(data.latitude, data.longitude);
+          } else {
+            tryBrowserGeo();
+          }
         });
       });
       return;
-    }catch(e){ /* fall through to browser geolocation */ }
+    }catch(e){
+      tryBrowserGeo();
+      return;
+    }
   }
 
-  if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(
-      (pos) => onSuccess(pos.coords.latitude, pos.coords.longitude),
-      onFail,
-      {enableHighAccuracy:true, timeout:8000}
-    );
-  } else {
-    onFail();
-  }
+  tryBrowserGeo();
 }
 
 function submitOrder(){
