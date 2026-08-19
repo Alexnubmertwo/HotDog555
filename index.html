@@ -187,6 +187,34 @@
     box-shadow:0 10px 26px rgba(255,140,0,0.4);
   }
   .empty-state{text-align:center; padding:30px 10px; color:var(--text-dim); font-size:13px;}
+
+  /* ---------- CHECKOUT FORM ---------- */
+  .form-group{margin-bottom:14px;}
+  .form-group label{display:block; font-size:12.5px; font-weight:700; color:var(--text-dim); margin-bottom:6px;}
+  .form-input, .form-textarea{
+    width:100%; background:rgba(255,255,255,0.06); border:1px solid var(--glass-brd);
+    border-radius:14px; padding:13px 14px; color:var(--text); font-size:14.5px; font-family:'Inter',sans-serif;
+    outline:none;
+  }
+  .form-input:focus, .form-textarea:focus{border-color:var(--glass-brd-strong);}
+  .form-textarea{resize:none; min-height:70px;}
+  .loc-btn{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
+    background:rgba(255,196,0,0.1); border:1px dashed var(--glass-brd-strong); border-radius:14px;
+    padding:13px; color:var(--yellow2); font-weight:700; font-size:14px;
+  }
+  .loc-btn.got{background:rgba(70,200,120,0.12); border:1px solid rgba(70,200,120,0.4); color:#7ee2a0;}
+  .extras-grid{display:flex; flex-wrap:wrap; gap:8px;}
+  .extra-chip{
+    display:flex; align-items:center; gap:6px; padding:10px 13px; border-radius:100px;
+    background:rgba(255,255,255,0.06); border:1px solid var(--glass-brd); font-size:13px; font-weight:600; color:var(--text-dim);
+  }
+  .extra-chip.on{background:linear-gradient(120deg, var(--yellow), var(--orange)); color:#1a0f00; border-color:transparent;}
+  .extra-chip .price{font-size:11px; opacity:0.8; font-family:'Inter',sans-serif;}
+  .back-row{display:flex; align-items:center; gap:10px; margin-bottom:6px;}
+  .back-btn{background:rgba(255,255,255,0.08); border:none; width:34px; height:34px; border-radius:11px; color:var(--text); font-size:16px; flex:none;}
+  .final-total{display:flex; justify-content:space-between; align-items:center; padding:14px 0; margin-top:6px; border-top:1px solid rgba(255,255,255,0.08); font-family:'Unbounded',sans-serif; font-size:16px;}
+  .final-total span:last-child{color:var(--yellow2);}
 </style>
 </head>
 <body>
@@ -239,7 +267,44 @@
   <h3>Ваш заказ</h3>
   <div id="cartItems"></div>
   <div class="cart-total-row"><span>Итого</span><span id="sheetTotal">0 сум</span></div>
-  <button class="checkout-btn" onclick="submitOrder()">Оформить заказ →</button>
+  <button class="checkout-btn" onclick="openCheckoutForm()">Оформить заказ →</button>
+</div>
+
+<div class="sheet-backdrop" id="formBackdrop" onclick="closeCheckoutForm()"></div>
+<div class="sheet" id="formSheet">
+  <div class="sheet-handle"></div>
+  <div class="back-row">
+    <button class="back-btn" onclick="closeCheckoutForm()">←</button>
+    <h3 style="margin:0;">Оформление заказа</h3>
+  </div>
+
+  <div class="form-group">
+    <label>📍 Геолокация</label>
+    <button class="loc-btn" id="locBtn" onclick="getLocation()">Отправить геолокацию</button>
+  </div>
+
+  <div class="form-group">
+    <label>👤 Имя</label>
+    <input class="form-input" id="inpName" placeholder="Как вас зовут?">
+  </div>
+
+  <div class="form-group">
+    <label>📞 Номер телефона</label>
+    <input class="form-input" id="inpPhone" type="tel" placeholder="+998 90 123 45 67">
+  </div>
+
+  <div class="form-group">
+    <label>🧂 Добавки и соусы (+5 000 сум за каждую)</label>
+    <div class="extras-grid" id="extrasGrid"></div>
+  </div>
+
+  <div class="form-group">
+    <label>💬 Комментарий</label>
+    <textarea class="form-textarea" id="inpComment" placeholder="Этаж, домофон, пожелания..."></textarea>
+  </div>
+
+  <div class="final-total"><span>Итого к оплате</span><span id="finalTotal">0 сум</span></div>
+  <button class="checkout-btn" onclick="submitOrder()">Подтвердить заказ ✅</button>
 </div>
 
 <script>
@@ -278,8 +343,19 @@ const CATS = [
   {id:'drinks', name:'Напитки', icon:'🥤'},
 ];
 
+const EXTRAS = [
+  {id:'ketchup', name:'Кетчуп', price:5000},
+  {id:'mayo', name:'Майонез', price:5000},
+  {id:'garlic', name:'Чесночный соус', price:5000},
+  {id:'cheese_sauce', name:'Сырный соус', price:5000},
+  {id:'bbq', name:'BBQ соус', price:5000},
+  {id:'extra_cheese', name:'Доп. сыр', price:5000},
+];
+
 let cart = {};
 let activeCat = 'hotdogs';
+let selectedExtras = new Set();
+let userLocation = null;
 
 function fmt(n){ return n.toLocaleString('ru-RU').replace(/,/g,' ') + ' сум'; }
 
@@ -314,7 +390,7 @@ function renderMenu(){
 function cardHtml(p){
   const qty = cart[p.id]?.qty || 0;
   return `
-    <div class="card" id="card-${p.id}">
+    <div class="card" id="card-${p.id}" onclick="cardTap('${p.id}')">
       <div class="img-wrap">
         ${p.badge ? `<div class="hit-badge">${p.badge}</div>` : ''}
         <img src="${p.img}" alt="${p.name}" loading="lazy">
@@ -328,13 +404,18 @@ function cardHtml(p){
       </div>
     </div>`;
 }
-function addBtnHtml(id){ return `<button class="add-btn" onclick="changeQty('${id}',1)">+</button>`; }
+function addBtnHtml(id){ return `<button class="add-btn" onclick="event.stopPropagation(); changeQty('${id}',1)">+</button>`; }
 function stepperHtml(id,qty){
-  return `<div class="stepper">
+  return `<div class="stepper" onclick="event.stopPropagation()">
     <button onclick="changeQty('${id}',-1)">−</button>
     <span class="qty">${qty}</span>
     <button onclick="changeQty('${id}',1)">+</button>
   </div>`;
+}
+
+// Tapping anywhere on the card adds one item — no need to hit the small + button
+function cardTap(id){
+  changeQty(id, 1);
 }
 
 function changeQty(id, delta){
@@ -400,14 +481,106 @@ function renderCartSheet(){
   document.getElementById('sheetTotal').textContent = fmt(sum);
 }
 
+// ---------- CHECKOUT FORM (step 2) ----------
+function openCheckoutForm(){
+  closeSheet();
+  renderExtras();
+  updateFinalTotal();
+  document.getElementById('formSheet').classList.add('show');
+  document.getElementById('formBackdrop').classList.add('show');
+}
+function closeCheckoutForm(){
+  document.getElementById('formSheet').classList.remove('show');
+  document.getElementById('formBackdrop').classList.remove('show');
+}
+
+function renderExtras(){
+  const wrap = document.getElementById('extrasGrid');
+  wrap.innerHTML = EXTRAS.map(e => `
+    <div class="extra-chip ${selectedExtras.has(e.id)?'on':''}" onclick="toggleExtra('${e.id}')">
+      <span>${e.name}</span><span class="price">+${e.price.toLocaleString('ru-RU').replace(/,/g,' ')}</span>
+    </div>`).join('');
+}
+
+function toggleExtra(id){
+  if(selectedExtras.has(id)) selectedExtras.delete(id);
+  else selectedExtras.add(id);
+  renderExtras();
+  updateFinalTotal();
+  if(tg) tg.HapticFeedback?.selectionChanged();
+}
+
+function extrasTotal(){
+  return EXTRAS.filter(e => selectedExtras.has(e.id)).reduce((s,e)=>s+e.price, 0);
+}
+
+function updateFinalTotal(){
+  const {sum} = cartTotals();
+  document.getElementById('finalTotal').textContent = fmt(sum + extrasTotal());
+}
+
+function getLocation(){
+  const btn = document.getElementById('locBtn');
+  btn.textContent = 'Определяем координаты...';
+
+  function onSuccess(lat, lon){
+    userLocation = {lat, lon};
+    btn.textContent = '✅ Геолокация отправлена';
+    btn.classList.add('got');
+    if(tg) tg.HapticFeedback?.notificationOccurred('success');
+  }
+  function onFail(){
+    btn.textContent = '⚠️ Не удалось получить, попробуйте снова';
+    if(tg) tg.HapticFeedback?.notificationOccurred('error');
+  }
+
+  // Prefer native Telegram LocationManager (Bot API 8.0+) if available
+  if(tg && tg.LocationManager){
+    try{
+      tg.LocationManager.init(() => {
+        tg.LocationManager.getLocation((data) => {
+          if(data) onSuccess(data.latitude, data.longitude);
+          else onFail();
+        });
+      });
+      return;
+    }catch(e){ /* fall through to browser geolocation */ }
+  }
+
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      (pos) => onSuccess(pos.coords.latitude, pos.coords.longitude),
+      onFail,
+      {enableHighAccuracy:true, timeout:8000}
+    );
+  } else {
+    onFail();
+  }
+}
+
 function submitOrder(){
   const {count, sum} = cartTotals();
   if(count===0) return;
+
+  const name = document.getElementById('inpName').value.trim();
+  const phone = document.getElementById('inpPhone').value.trim();
+  const comment = document.getElementById('inpComment').value.trim();
+
+  if(!name){ document.getElementById('inpName').focus(); if(tg) tg.HapticFeedback?.notificationOccurred('error'); return; }
+  if(!phone){ document.getElementById('inpPhone').focus(); if(tg) tg.HapticFeedback?.notificationOccurred('error'); return; }
+
+  const extrasChosen = EXTRAS.filter(e => selectedExtras.has(e.id));
+  const grandTotal = sum + extrasTotal();
+
   const payload = {
     action: 'checkout',
     items: Object.values(cart).map(c => ({id:c.product.id, name:c.product.name, price:c.product.price, qty:c.qty})),
-    total: sum
+    extras: extrasChosen.map(e => ({name:e.name, price:e.price})),
+    name, phone, comment,
+    location: userLocation,
+    total: grandTotal
   };
+
   if(tg){
     tg.MainButton?.hide();
     tg.sendData(JSON.stringify(payload));
