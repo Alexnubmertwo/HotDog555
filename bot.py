@@ -73,32 +73,46 @@ async def got_order(message: Message):
     phone = data.get("phone", "-")
     comment = data.get("comment", "")
     location = data.get("location")
+    mode = data.get("mode", "delivery")  # 'delivery' или 'pickup'
 
     if not items:
         await message.answer("Корзина пуста. Откройте «Товары» и выберите что-нибудь вкусное 🌭")
         return
 
     # 1) Мгновенно подтверждаем клиенту, что заказ ушёл
-    await message.answer(
-        "📨 <b>Заказ отправлен!</b>\n\nМы уже передали его в ресторан — как только подтвердят, "
-        "пришлём точное время готовности ⏳"
-    )
+    if mode == "pickup":
+        ack_text = (
+            "📨 <b>Заказ отправлен!</b>\n\nМы уже передали его в ресторан — как только подтвердят, "
+            "пришлём точное время готовности ⏳\n\n"
+            "📍 <b>Адрес самовывоза:</b> Hot dog 555, Fargona Road 555, Tashkent"
+        )
+    else:
+        ack_text = (
+            "📨 <b>Заказ отправлен!</b>\n\nМы уже передали его в ресторан — как только подтвердят, "
+            "пришлём точное время готовности ⏳"
+        )
+    await message.answer(ack_text)
 
     items_text = "\n".join(
         f"• {i['name']} × {i['qty']} — {i['price']*i['qty']:,} сум".replace(",", " ") for i in items
     )
     extras_text = ", ".join(f"{e['name']} (+{e['price']:,} сум)".replace(",", " ") for e in extras) if extras else "—"
-    location_line = (
-        f'<a href="https://maps.google.com/?q={location["lat"]},{location["lon"]}">📍 Открыть на карте</a>'
-        if location else "не указана"
-    )
+
+    if mode == "pickup":
+        mode_line = "🏃 <b>Самовывоз</b>"
+    else:
+        location_line = (
+            f'<a href="https://maps.google.com/?q={location["lat"]},{location["lon"]}">📍 Открыть на карте</a>'
+            if location else "не указана"
+        )
+        mode_line = f"🚚 <b>Доставка</b>\n📍 <b>Локация:</b> {location_line}"
 
     order_text = (
         "🆕 <b>НОВЫЙ ЗАКАЗ — HotDog555</b>\n"
         f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M')}\n\n"
         f"👤 <b>Имя:</b> {name}\n"
         f"📞 <b>Телефон:</b> {phone}\n"
-        f"📍 <b>Локация:</b> {location_line}\n\n"
+        f"{mode_line}\n\n"
         f"🧾 <b>Заказ:</b>\n{items_text}\n\n"
         f"🧂 <b>Доп. услуги:</b> {extras_text}\n"
         f"💬 <b>Комментарий:</b> {comment or '—'}\n\n"
@@ -113,7 +127,7 @@ async def got_order(message: Message):
             order_text,
             reply_markup=prep_time_keyboard(message.chat.id),
         )
-        if location:
+        if mode == "delivery" and location:
             await bot.send_location(ADMIN_GROUP_ID, latitude=location["lat"], longitude=location["lon"])
     except Exception as e:
         logging.error(f"Не удалось отправить заказ в группу (проверьте ADMIN_GROUP_ID): {e}")
