@@ -251,6 +251,22 @@
   .back-btn{background:rgba(255,255,255,0.08); border:none; width:34px; height:34px; border-radius:11px; color:var(--text); font-size:16px; flex:none;}
   .final-total{display:flex; justify-content:space-between; align-items:center; padding:14px 0; margin-top:6px; border-top:1px solid rgba(255,255,255,0.08); font-family:'Unbounded',sans-serif; font-size:16px;}
   .final-total span:last-child{color:var(--yellow2);}
+
+  /* ---------- DELIVERY / PICKUP TOGGLE ---------- */
+  .mode-toggle{display:flex; gap:8px; background:rgba(255,255,255,0.05); border:1px solid var(--glass-brd); border-radius:16px; padding:5px;}
+  .mode-btn{
+    flex:1; text-align:center; padding:11px 8px; border-radius:12px; font-size:13.5px; font-weight:700;
+    color:var(--text-dim); transition:all .2s ease; display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .mode-btn.active{
+    background:linear-gradient(120deg, var(--yellow), var(--orange)); color:#1a0f00;
+    box-shadow:0 4px 14px rgba(255,150,0,0.35);
+  }
+  .pickup-info{
+    background:rgba(255,196,0,0.08); border:1px dashed var(--glass-brd-strong); border-radius:14px;
+    padding:13px 14px; font-size:13.5px; color:var(--text); line-height:1.5;
+  }
+  .pickup-info b{color:var(--yellow2);}
 </style>
 </head>
 <body>
@@ -319,8 +335,21 @@
   </div>
 
   <div class="form-group">
+    <label>🚚 Способ получения</label>
+    <div class="mode-toggle">
+      <div class="mode-btn active" id="modeDelivery" onclick="setMode('delivery')">🚚 Доставка</div>
+      <div class="mode-btn" id="modePickup" onclick="setMode('pickup')">🏃 Самовывоз</div>
+    </div>
+  </div>
+
+  <div class="form-group" id="deliveryGeoBlock">
     <label>📍 Геолокация</label>
     <button class="loc-btn" id="locBtn" onclick="getLocation()">Отправить геолокацию</button>
+  </div>
+
+  <div class="form-group" id="pickupInfoBlock" style="display:none;">
+    <label>📍 Адрес самовывоза</label>
+    <div class="pickup-info">🌭 <b>HotDog555</b><br>Fargona Road 555, Tashkent<br>Заберите заказ у нас — ждём вас!</div>
   </div>
 
   <div class="form-group">
@@ -396,6 +425,7 @@ let cart = {};
 let activeCat = 'hotdogs';
 let selectedExtras = new Set();
 let userLocation = null;
+let orderMode = 'delivery';
 
 function fmt(n){ return n.toLocaleString('ru-RU').replace(/,/g,' ') + ' сум'; }
 
@@ -522,14 +552,24 @@ function renderCartSheet(){
 }
 
 // ---------- CHECKOUT FORM (step 2) ----------
+function setMode(mode){
+  orderMode = mode;
+  document.getElementById('modeDelivery').classList.toggle('active', mode==='delivery');
+  document.getElementById('modePickup').classList.toggle('active', mode==='pickup');
+  document.getElementById('deliveryGeoBlock').style.display = mode==='delivery' ? 'block' : 'none';
+  document.getElementById('pickupInfoBlock').style.display = mode==='pickup' ? 'block' : 'none';
+  if(mode==='delivery' && !userLocation) getLocation();
+  if(tg) tg.HapticFeedback?.selectionChanged();
+}
+
 function openCheckoutForm(){
   closeSheet();
   renderExtras();
   updateFinalTotal();
   document.getElementById('formSheet').classList.add('show');
   document.getElementById('formBackdrop').classList.add('show');
-  // Ask for geolocation automatically as soon as the form opens
-  if(!userLocation) getLocation();
+  // Ask for geolocation automatically as soon as the form opens (delivery only)
+  if(orderMode==='delivery' && !userLocation) getLocation();
 }
 function closeCheckoutForm(){
   document.getElementById('formSheet').classList.remove('show');
@@ -635,7 +675,8 @@ function submitOrder(){
     items: Object.values(cart).map(c => ({id:c.product.id, name:c.product.name, price:c.product.price, qty:c.qty})),
     extras: extrasChosen.map(e => ({name:e.name, price:e.price})),
     name, phone, comment,
-    location: userLocation,
+    mode: orderMode,
+    location: orderMode==='delivery' ? userLocation : null,
     total: grandTotal
   };
 
